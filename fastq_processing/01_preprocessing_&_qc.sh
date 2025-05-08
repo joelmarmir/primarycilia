@@ -38,9 +38,24 @@ done
 # ------ Quality Control -----
 # ----------------------------
 
-
-# Load fastp module
+# Load fastqc and multiqc module
 module load FastQC/0.12.1-Java-11
+module load Miniconda3/202411
+which multiqc
+
+# Rename input and output directory
+base_dir="/home/jmartinez/Desktop/toxins_analysis/data/01_fastqs/merged"
+output_dir="/home/jmartinez/Desktop/toxins_analysis/data/02_qc"
+
+# Run FastQC for all files in the directory
+fastqc -o "$output_dir" -t 8 "$base_dir"/*.fastq.gz
+
+# Summaries all reports with Multiqc
+multiqc /home/jmartinez/Desktop/toxins_analysis/data/02_qc
+
+
+
+
 
 # Directories
 input_dir="/home/jmartinez/Desktop/toxins_analysis/Entrega_GENext83_23/FASTQ_Generation_2023-08-11_03_17_23Z-40285254/"
