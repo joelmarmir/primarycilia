@@ -8,7 +8,6 @@
 # ------ Preprocessing -------
 # ----------------------------
 
-# Base and output directories
 base_dir="/home/jmartinez/Desktop/toxins_analysis/data/01_fastqs"
 output_dir="$base_dir/merged"
 mkdir -p "$output_dir"
@@ -34,6 +33,10 @@ for sample in "${sample[@]}"; do
     cat $(find "$base_dir" -type f -name "${sample}_L00[1-4]_R2_001.fastq.gz" | sort) > "$output_dir/${sample}_merged_R2_001.fastq.gz"
 done
 
+
+# ----------------------------
+# ------ Quality Control -----
+# ----------------------------
 
 
 # Load fastp module
