@@ -28,4 +28,3 @@ echo "Finished at: $(date)"
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 echo "Total time taken: $elapsed_time seconds"
-
