@@ -28,7 +28,6 @@ module load STAR/2.7.8a-GCC-10.2.0
 input_dir="/users/genomics/jmartinez/a_primary_cilia_project/01_fastqs/merged"
 output_dir="/users/genomics/jmartinez/a_primary_cilia_project/04_STAR"
 genome_indices="/users/genomics/jmartinez/data/00_reference_genomes/human/indices"
-a_primary_cilia_project/01_fastqs/merged/RPE-DMSO-1_S1_merged_R1_001.fastq.gz
 start_time=$(date +%s)
 
 # Function to process FASTQ files
