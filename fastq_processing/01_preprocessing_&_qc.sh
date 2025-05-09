@@ -39,7 +39,8 @@ done
 # ----------------------------
 
 # Load fastqc and multiqc module
-module load Miniconda3/20240927
+module load FastQC/0.12.1-Java-11
+module load Miniconda3/202411
 multiqc --version
 
 # Rename input and output directory
@@ -74,3 +75,6 @@ for sample in "${sample[@]}"; do
         -j "$fastp_output_dir/${sample}_fastp.json" \
         --thread 8
 done
+
+# Summaries all reports with Multiqc
+multiqc $fastp_output_dir -o $fastp_output_dir
