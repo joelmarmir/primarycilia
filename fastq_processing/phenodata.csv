@@ -1,0 +1,10 @@
+name,Condition,Replicate
+RPE-DMSO-1_S1,control,1
+RPE-DMSO-2_S2,control,2
+RPE-DMSO-3_S3,control,3
+RPE-p8-1_S4,p8,1
+RPE-p8-2_S5,p8,2
+RPE-p8-3_S6,p8,3
+RPE-p15-1_S7,p15,1
+RPE-p15-2_S8,p15,2
+RPE-p15-3_S9,p15,3
