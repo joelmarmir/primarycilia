@@ -14,7 +14,7 @@
 #SBATCH --cpus-per-task=90
 #SBATCH --mem=500G
 #SBATCH --partition=bigmem
-#SBATCH --output=/users/genomics/jmartinez/STAR_alignment_6_log.out
+#SBATCH --output=/users/genomics/jmartinez/STAR_primarycilia_1_log.out
 #SBATCH --nodelist=node17
 
 # ------------------------
@@ -61,7 +61,7 @@ export -f STAR_align
 # Set maximum number of parallel jobs
 MAX_JOBS=6
 
-# Find all _1_trimmed.fastq.gz files in input_dir
+# Find all fastq.gz files in input_dir
 find "$input_dir" -type f -name "*fastq.gz" | while read -r FILE; do
     STAR_align "$FILE" &
     
