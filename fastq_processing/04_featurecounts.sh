@@ -14,7 +14,7 @@
 #SBATCH --cpus-per-task=90
 #SBATCH --mem=500G
 #SBATCH --partition=bigmem
-#SBATCH --output=/users/genomics/jmartinez/featureCounts_6_log.out
+#SBATCH --output=/users/genomics/jmartinez/featureCounts_primarycilia_2_log.out
 #SBATCH --nodelist=node17
 
 # Load Subread module for featruecounts
@@ -30,16 +30,18 @@ start_time=$(date +%s)
 # Function to process FASTQ files
 read_count() {
     local FILE="$1"
-    # Count paired-end BAM files    
-    featureCounts \
-        -T 15 \
-        -p \
-        --countReadPairs \
-        -B \
-        -a "${human_gtf}" \
-        -o "${output_dir}/$(basename "$FILE" | sed 's/_mapped_/_counts_/').txt" \
-        -s 2 \      # "fr-firstrand" correponds to -s 2 in featureCounts
-        "$FILE"
+
+    if [[ -f "$FILE" ]]; then
+        # Count paired-end BAM files    
+        featureCounts \
+            -T 15 \
+            -p \
+            --countReadPairs \
+            -B \
+            -a "${human_gtf}" \
+            -o "${output_dir}/$(basename "$FILE" | sed 's/_mapped_/_counts_/').txt" \
+            -s 1 \
+            "$FILE"
     # Error handling
     else
         echo "Warning: File not found. Skipping $FILE"
