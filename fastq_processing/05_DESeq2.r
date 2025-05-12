@@ -7,11 +7,10 @@ library(DESeq2)
 library(dplyr)
 library(readr)
 library(pheatmap)
-library(org.Mm.eg.db)
+library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(clusterProfiler)
 library(ggplot2)
-
 
 #--------------------------------------
 #------------ Functions ---------------
@@ -82,47 +81,61 @@ dev.off()
 
 ############## Deseq Analysis ##############
 
-# Filter genes with less than 10 reads total
+# Filter genes with less than 10 rp8eads total
 keep <- rowSums(counts(dds)) >= 10
 dds_modified <- dds[keep,]
 
-# Set uninduced as reference level
-dds_modified$Condition <- relevel(dds_modified$Condition, ref = "uninduced_0h")
+############## Data visualization ##############
 
+vsd2 <- vst(dds_modified, blind = TRUE)
+
+# Export PCA plot to PDF
+pdf("PCA_plot_modified.pdf")
+plotPCA(vsd2, intgroup = c("Condition"))
+dev.off()
+
+############## Deseq Analysis ##############
+
+# Set uninduced as reference level
+dds_modified$Condition <- relevel(dds_modified$Condition, ref = "control")
 
 # Run DESeq and save results
 dds_modified <- DESeq(dds_modified)
 resultsNames(dds_modified)
-res_12h <- results(dds_modified, name = "Condition_induced_12h_vs_uninduced_0h")
-res_48h <- results(dds_modified, name = "Condition_induced_48h_vs_uninduced_0h")
+res_p8 <- results(dds_modified, name = "Condition_p8_vs_control")
+res_p15 <- results(dds_modified, name = "Condition_p15_vs_control")
 
 # Extract log2FoldChange and ENSEMBL identifier
-res_df_12h <- as.data.frame(res_12h)
-res_df_48h <- as.data.frame(res_48h)
+res_df_p8 <- as.data.frame(res_p8)
+res_df_p15 <- as.data.frame(res_p15)
 
 # Remove version number from gene names (to extract geneNames)
-res_df_12h$ENSEMBL <- rownames(res_df_12h)
-res_df_48h$ENSEMBL <- rownames(res_df_48h)
-res_df_12h$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_12h))
-res_df_48h$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_12h))
+res_df_p8$ENSEMBL <- rownames(res_df_p8)
+res_df_p15$ENSEMBL <- rownames(res_df_p15)
+res_df_p8$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_p8))
+res_df_p15$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_p15))
 
 # Map ENSEMBL IDs to gene symbols
-gene_symbols <- mapIds(org.Mm.eg.db, keys = res_df_12h$ENSEMBL_short, column = "SYMBOL", keytype = "ENSEMBL", multiVals = "first")
+gene_symbols <- mapIds(org.Hs.eg.db, keys = res_df_p8$ENSEMBL_short, column = "SYMBOL", keytype = "ENSEMBL", multiVals = "first")
 
 # Add gene symbols to the results data frames
-res_df_12h$GeneSymbol <- gene_symbols
-res_df_48h$GeneSymbol <- gene_symbols
+res_df_p8$GeneSymbol <- gene_symbols
+res_df_p15$GeneSymbol <- gene_symbols
 
 # Reorder columns to place GeneSymbol first
-res_df_12h <- res_df_12h[, c("ENSEMBL", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
-res_df_48h <- res_df_48h[, c("ENSEMBL", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
+res_df_p8 <- res_df_p8[, c("ENSEMBL", "ENSEMBL_short", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
+res_df_p15 <- res_df_p15[, c("ENSEMBL", "ENSEMBL_short", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
 
 # Remove version number from gene symbols
-rownames(res_df_12h) <- NULL
-rownames(res_df_48h) <- NULL
-  
-write.csv(res_df_12h, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_12h_DESeq2_results1.csv", row.names = FALSE)
-write.csv(res_df_48h, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_48h_DESeq2_results1.csv", row.names = FALSE)
+rownames(res_df_p8) <- NULL
+rownames(res_df_p15) <- NULL
+
+# Sort files by log2fc desc
+res_df_p8 <- res_df_p8 %>% arrange(desc(log2FoldChange))
+res_df_p15 <- res_df_p15 %>% arrange(desc(log2FoldChange))
+
+write.csv(res_df_p8, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_p8_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_df_p15, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_p15_DESeq2_results1.csv", row.names = FALSE)
 
 #--------------------------------------
 #------- Results visualization --------
@@ -131,35 +144,35 @@ write.csv(res_df_48h, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_201
 ############## heatmap ##############   
 
 # Select genes with padj > 0.05 and abs(logFC) > 2
-selected_genes_12h <- res_df_12h %>% filter(res_df_12h$padj < 0.05, abs(res_df_12h$log2FoldChange) > 2)
-selected_genes_48h <- res_df_48h %>% filter(res_df_48h$padj < 0.05, abs(res_df_48h$log2FoldChange) > 2)
+selected_genes_p8 <- res_df_p8 %>% filter(res_df_p8$padj < 0.05, abs(res_df_p8$log2FoldChange) > 0.5)
+selected_genes_p15 <- res_df_p15 %>% filter(res_df_p15$padj < 0.05, abs(res_df_p15$log2FoldChange) > 0.5)
 
 # Check the dimensions of the selected genes
-dim(selected_genes_12h)
-dim(selected_genes_48h)
+dim(selected_genes_p8)
+dim(selected_genes_p15)
 
 # Merge data frames by ENSEMBL ID
-selected_genes <- full_join(selected_genes_12h, selected_genes_48h, by = "ENSEMBL")
+selected_genes <- full_join(selected_genes_p8, selected_genes_p15, by = "ENSEMBL_short")
 
 # Remove duplicates
 selected_genes <- distinct(selected_genes)
 
 # Name rows with ENSMBL ID
-rownames(selected_genes) <- selected_genes$ENSEMBL
+rownames(selected_genes) <- selected_genes$ENSEMBL_short
 selected_genes <- selected_genes[, -1]  # Remove ENSEMBL column
 
-rownames(selected_genes_12h) <- selected_genes_12h$ENSEMBL
-selected_genes_12h <- selected_genes_12h[, -1]  # Remove ENSEMBL column
+rownames(selected_genes_p8) <- selected_genes_p8$ENSEMBL_short
+selected_genes_p8 <- selected_genes_p8[, -1]  # Remove ENSEMBL column
 
-rownames(selected_genes_48h) <- selected_genes_48h$ENSEMBL
-selected_genes_48h <- selected_genes_48h[, -1]  # Remove ENSEMBL column
+rownames(selected_genes_p15) <- selected_genes_p15$ENSEMBL_short
+selected_genes_p15 <- selected_genes_p15[, -1]  # Remove ENSEMBL column
 
 # Check the dimensions of the merged data frame
 dim(selected_genes)
 
 # Visualize results in a heatmap
 # First normalize countsfrom dds object
-hmp_mat <- counts(dds_modified, normalized = TRUE)[(rownames(selected_genes_48h)),]
+hmp_mat <- counts(dds_modified, normalized = TRUE)[(rownames(selected_genes_p15)),]
 
 # Get z-score and name samples
 hmp_zmat <- t(apply(hmp_mat, 1, scale))
@@ -175,9 +188,9 @@ dev.off()
 ############## Volcano plot ##############
 # Create a function to generate volcano plots with the names of the top 20 DEG
 create_volcano_plot <- function(res_df, title) {
-    res_df <- res_df %>% mutate(Significant = padj < 0.05 & abs(log2FoldChange) > 2)
+    res_df <- res_df %>% mutate(Significant = padj < 0.05 & abs(log2FoldChange) > 0.5)
     
-    top_genes <- res_df %>% filter(Significant) %>% arrange(padj) %>% slice(1:20) %>% pull(GeneSymbol)
+    top_genes <- res_df %>% filter(Significant) %>% arrange(padj) %>% slice(1:10) %>% pull(GeneSymbol)
     
     ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj), color = Significant)) +
         geom_point(alpha = 0.5) +
@@ -188,13 +201,13 @@ create_volcano_plot <- function(res_df, title) {
         geom_text(aes(label = ifelse(GeneSymbol %in% top_genes, GeneSymbol, "")), hjust = 1.5, vjust = 1.5)
 }
 
-# Generate volcano plots for 12h and 48h
-pdf("volcano_plot_12h.pdf")
-print(create_volcano_plot(res_df_12h, "Volcano Plot - 12h"))
+# Generate volcano plots for p8 and p15
+pdf("volcano_plot_p8.pdf")
+print(create_volcano_plot(res_df_p8, "Volcano Plot - p8"))
 dev.off()
 
-pdf("volcano_plot_48h.pdf")
-print(create_volcano_plot(res_df_48h, "Volcano Plot - 48h"))
+pdf("volcano_plot_p15.pdf")
+print(create_volcano_plot(res_df_p15, "Volcano Plot - p15"))
 dev.off()
 
 
@@ -203,13 +216,13 @@ dev.off()
 # ------------------------------------------
 
 # Compute GO
-GO_results1 <- enrichGO(gene = rownames(selected_genes_12h),
-                       OrgDb = "org.Mm.eg.db",
+GO_results1 <- enrichGO(gene = selected_genes_p8$ENSEMBL_short,
+                       OrgDb = "org.Hs.eg.db",
                        keyType = "ENSEMBL",
                        ont = "BP")
 
-GO_results2 <- enrichGO(gene = rownames(selected_genes_48h),
-                        OrgDb = "org.Mm.eg.db",
+GO_results2 <- enrichGO(gene = selected_genes_p15$ENSEMBL_short,
+                        OrgDb = "org.Hs.eg.db",
                         keyType = "ENSEMBL",
                         ont = "BP")
 
@@ -233,14 +246,14 @@ dev.off()
 
 
 # Prova random
-matching_rows <- res_df_48h %>% filter(tolower(GeneSymbol) == "fbl")
+matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "fbl")
 print(matching_rows)
 # Prova random
-matching_rows <- res_df_48h %>% filter(tolower(GeneSymbol) == "dkc1")
+matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "dkc1")
 print(matching_rows)
 # Prova random
-matching_rows <- res_df_48h %>% filter(tolower(GeneSymbol) == "trmt112")
+matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "trmt112")
 print(matching_rows)
 # Prova random
-matching_rows <- res_df_48h %>% filter(tolower(GeneSymbol) == "dimt1")
+matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "dimt1")
 print(matching_rows)
