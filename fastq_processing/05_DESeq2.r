@@ -11,6 +11,7 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(clusterProfiler)
 library(ggplot2)
+library(data.table)
 
 #--------------------------------------
 #------------ Functions ---------------
@@ -81,7 +82,7 @@ dev.off()
 
 ############## Deseq Analysis ##############
 
-# Filter genes with less than 10 rp8eads total
+# Filter genes with less than 10 reads total
 keep <- rowSums(counts(dds)) >= 10
 dds_modified <- dds[keep,]
 
@@ -131,19 +132,23 @@ rownames(res_df_p8) <- NULL
 rownames(res_df_p15) <- NULL
 
 # Sort files by log2fc desc
-res_df_p8 <- res_df_p8 %>% arrange(desc(log2FoldChange))
-res_df_p15 <- res_df_p15 %>% arrange(desc(log2FoldChange))
+res_df_p8 <- res_df_p8 %>% arrange(padj)
+res_df_p15 <- res_df_p15 %>% arrange(padj)
 
-write.csv(res_df_p8, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_p8_DESeq2_results1.csv", row.names = FALSE)
-write.csv(res_df_p15, file = "/users/genomics/jmartinez/data/06_log2fc/Aydin_2019/Aydin_2019_Ascl1_p15_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_df_p8, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/p8_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_df_p15, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/p15_DESeq2_results1.csv", row.names = FALSE)
 
+sum(is.na(res_df_p8$padj))
+sum(is.na(res_df_p8$pvalue))
+dim(res_df_p8)
+head(res_df_p8, 20)
 #--------------------------------------
 #------- Results visualization --------
 #--------------------------------------
 
 ############## heatmap ##############   
 
-# Select genes with padj > 0.05 and abs(logFC) > 2
+# Select genes with padj > 0.05 and abs(log2FC) > 0.5
 selected_genes_p8 <- res_df_p8 %>% filter(res_df_p8$padj < 0.05, abs(res_df_p8$log2FoldChange) > 0.5)
 selected_genes_p15 <- res_df_p15 %>% filter(res_df_p15$padj < 0.05, abs(res_df_p15$log2FoldChange) > 0.5)
 
