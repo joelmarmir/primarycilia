@@ -105,16 +105,21 @@ dds_modified <- DESeq(dds_modified)
 resultsNames(dds_modified)
 res_p8 <- results(dds_modified, name = "Condition_p8_vs_control")
 res_p15 <- results(dds_modified, name = "Condition_p15_vs_control")
+res_p8_vs_p15 <- results(dds_modified, contrast = c("Condition", "p8", "p15"))
+
 
 # Extract log2FoldChange and ENSEMBL identifier
 res_df_p8 <- as.data.frame(res_p8)
 res_df_p15 <- as.data.frame(res_p15)
+res_p8_vs_p15 <- as.data.frame(res_p8_vs_p15)
 
 # Remove version number from gene names (to extract geneNames)
 res_df_p8$ENSEMBL <- rownames(res_df_p8)
 res_df_p15$ENSEMBL <- rownames(res_df_p15)
+res_p8_vs_p15$ENSEMBL <- rownames(res_p8_vs_p15)
 res_df_p8$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_p8))
 res_df_p15$ENSEMBL_short <- gsub("\\..*", "",row.names(res_df_p15))
+res_p8_vs_p15$ENSEMBL_short <- gsub("\\..*", "",row.names(res_p8_vs_p15))
 
 # Map ENSEMBL IDs to gene symbols
 gene_symbols <- mapIds(org.Hs.eg.db, keys = res_df_p8$ENSEMBL_short, column = "SYMBOL", keytype = "ENSEMBL", multiVals = "first")
@@ -122,26 +127,34 @@ gene_symbols <- mapIds(org.Hs.eg.db, keys = res_df_p8$ENSEMBL_short, column = "S
 # Add gene symbols to the results data frames
 res_df_p8$GeneSymbol <- gene_symbols
 res_df_p15$GeneSymbol <- gene_symbols
+res_p8_vs_p15$GeneSymbol <- gene_symbols
 
 # Reorder columns to place GeneSymbol first
 res_df_p8 <- res_df_p8[, c("ENSEMBL", "ENSEMBL_short", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
 res_df_p15 <- res_df_p15[, c("ENSEMBL", "ENSEMBL_short", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
+res_p8_vs_p15 <- res_p8_vs_p15[, c("ENSEMBL", "ENSEMBL_short", "GeneSymbol", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj", "baseMean")]
 
 # Remove version number from gene symbols
 rownames(res_df_p8) <- NULL
 rownames(res_df_p15) <- NULL
+rownames(res_p8_vs_p15) <- NULL
 
 # Sort files by log2fc desc
 res_df_p8 <- res_df_p8 %>% arrange(padj)
 res_df_p15 <- res_df_p15 %>% arrange(padj)
+res_p8_vs_p15 <- res_p8_vs_p15 %>% arrange(padj)
 
-write.csv(res_df_p8, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/p8_DESeq2_results1.csv", row.names = FALSE)
-write.csv(res_df_p15, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/p15_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_df_p8, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/ctrl_vs_p8_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_df_p15, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/ctrl_vs_p15_DESeq2_results1.csv", row.names = FALSE)
+write.csv(res_p8_vs_p15, file = "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/p8_vs_p15_DESeq2_results1.csv", row.names = FALSE)
 
 sum(is.na(res_df_p8$padj))
 sum(is.na(res_df_p8$pvalue))
 dim(res_df_p8)
+
 head(res_df_p8, 20)
+
+
 #--------------------------------------
 #------- Results visualization --------
 #--------------------------------------
@@ -151,10 +164,12 @@ head(res_df_p8, 20)
 # Select genes with padj > 0.05 and abs(log2FC) > 0.5
 selected_genes_p8 <- res_df_p8 %>% filter(res_df_p8$padj < 0.05, abs(res_df_p8$log2FoldChange) > 0.5)
 selected_genes_p15 <- res_df_p15 %>% filter(res_df_p15$padj < 0.05, abs(res_df_p15$log2FoldChange) > 0.5)
+selected_genes_p8_vs_p15 <- res_p8_vs_p15 %>% filter(res_p8_vs_p15$padj < 0.05, abs(res_p8_vs_p15$log2FoldChange) > 0.5)
 
 # Check the dimensions of the selected genes
 dim(selected_genes_p8)
 dim(selected_genes_p15)
+dim(selected_genes_p8_vs_p15)
 
 # Merge data frames by ENSEMBL ID
 selected_genes <- full_join(selected_genes_p8, selected_genes_p15, by = "ENSEMBL_short")
@@ -207,58 +222,125 @@ create_volcano_plot <- function(res_df, title) {
 }
 
 # Generate volcano plots for p8 and p15
-pdf("volcano_plot_p8.pdf")
-print(create_volcano_plot(res_df_p8, "Volcano Plot - p8"))
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/volcano_ctrl_vs_p8.pdf")
+print(create_volcano_plot(res_df_p8, "Volcano Plot - ctrl vs p8"))
 dev.off()
 
-pdf("volcano_plot_p15.pdf")
-print(create_volcano_plot(res_df_p15, "Volcano Plot - p15"))
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/volcano_ctrl_vs_p15.pdf")
+print(create_volcano_plot(res_df_p15, "Volcano Plot - ctrl vs p15"))
 dev.off()
 
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/volcano_p8_vs_p15.pdf")
+print(create_volcano_plot(res_p8_vs_p15, "Volcano Plot - p8 vs p15"))
+dev.off()
 
 #-------------------------------------------
 # --------- Gene ontology -----------------
 # ------------------------------------------
 
 # Compute GO
-GO_results1 <- enrichGO(gene = selected_genes_p8$ENSEMBL_short,
+GO_results1_ctrl_vs_p8 <- enrichGO(gene = selected_genes_p8$ENSEMBL_short,
                        OrgDb = "org.Hs.eg.db",
                        keyType = "ENSEMBL",
                        ont = "BP")
 
-GO_results2 <- enrichGO(gene = selected_genes_p15$ENSEMBL_short,
+GO_results2_ctrl_vs_p15 <- enrichGO(gene = selected_genes_p15$ENSEMBL_short,
+                        OrgDb = "org.Hs.eg.db",
+                        keyType = "ENSEMBL",
+                        ont = "BP")
+
+GO_results3_p8_vs_p15 <- enrichGO(gene = selected_genes_p8_vs_p15$ENSEMBL_short,
                         OrgDb = "org.Hs.eg.db",
                         keyType = "ENSEMBL",
                         ont = "BP")
 
 
 # Illustrate top 10 ontologies
-pdf("GO_results1_barplot.pdf")
-barplot(GO_results1, showCategory = 10)
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/GO_results1_ctrl_vs_p8_barplot.pdf")
+barplot(GO_results1_ctrl_vs_p8, showCategory = 10)
 dev.off()
 
-pdf("GO_results1_dotplot.pdf")
-dotplot(GO_results1, showCategory = 10)
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/GO_results2_ctrl_vs_p15_barplot.pdf")
+barplot(GO_results2_ctrl_vs_p15, showCategory = 10)
 dev.off()
 
-pdf("GO_results2_barplot.pdf")
-barplot(GO_results2, showCategory = 10)
-dev.off()
-
-pdf("GO_results2_dotplot.pdf")
-dotplot(GO_results2, showCategory = 10)
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/GO_results3_p8_vs_p15_barplot.pdf")
+barplot(GO_results3_p8_vs_p15, showCategory = 10)
 dev.off()
 
 
-# Prova random
-matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "fbl")
-print(matching_rows)
-# Prova random
-matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "dkc1")
-print(matching_rows)
-# Prova random
-matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "trmt112")
-print(matching_rows)
-# Prova random
-matching_rows <- res_df_p15 %>% filter(tolower(GeneSymbol) == "dimt1")
-print(matching_rows)
+########## Plot genes of interest #############3
+gene_info <- read_tsv("/users/genomics/jmartinez/a_primary_cilia_project/99_general/Reiter2017_BigCategories.txt")
+head(gene_info)
+
+merge_fc <- function(df, label) {
+    df %>%
+        select(GeneSymbol, log2FoldChange) %>%
+        rename(!!label := log2FoldChange)
+}
+
+merged_fc <- gene_info %>%
+    left_join(merge_fc(res_df_p8, "log2FC_p8"), by = "GeneSymbol") %>%
+    left_join(merge_fc(res_df_p15, "log2FC_p15"), by = "GeneSymbol") %>%
+    left_join(merge_fc(res_p8_vs_p15, "log2FC_p8_vs_p15"), by = "GeneSymbol")
+
+head(res_p8_vs_p15)
+head(res_df_p8)
+head(res_df_p15)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+reiter_genes <- read.delim("/users/genomics/jmartinez/a_primary_cilia_project/99_general/Reiter2017_BigCategories.txt")
+genes_of_interest <- unique(reiter_genes$Gene)
+
+# Map symbols to ENSEMBL using the same keytype as your DESeq2 rownames
+ensembl_ids <- mapIds(org.Hs.eg.db,
+                      keys = genes_of_interest,
+                      column = "ENSEMBL",
+                      keytype = "SYMBOL",
+                      multiVals = "first")
+
+# Remove NAs
+ensembl_ids <- na.omit(ensembl_ids)
+
+vsd2 <- vst(dds_modified, blind = TRUE)
+
+# From VST-transformed object (good for visualization)
+vsd_mat <- assay(vsd2)
+rownames(vsd_mat) <- gsub("\\..*", "", rownames(vsd_mat))
+vsd_subset <- vsd_mat[rownames(vsd_mat) %in% ensembl_ids, ]
+
+# Or from normalized counts (raw scale)
+norm_counts <- counts(dds_modified, normalized = TRUE)
+norm_subset <- norm_counts[rownames(norm_counts) %in% ensembl_ids, ]
+
+annotation <- phenodata[, c("Condition", "Replicate")]
+rownames(annotation) <- phenodata$name  # or whatever column matches colnames(vsd_subset)
+
+# Heatmap
+pdf("/users/genomics/jmartinez/a_primary_cilia_project/07_plots/heatmap1.pdf")
+pheatmap(vsd_subset,
+         annotation_col = annotation,
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         show_rownames = TRUE)
+dev.off()
+
+dim(vsd_subset)

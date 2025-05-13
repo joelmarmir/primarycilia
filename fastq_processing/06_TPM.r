@@ -89,3 +89,32 @@ tpm_df <- bind_cols(
 
 head(tpm_df)
 
+############# Annotate gene names #############
+
+# Remove suffixes en ENSEMBL IDs
+tpm_df$geneid <- gsub("\\..*", "", tpm_df$geneid)
+
+# Map Ensembl Gene IDs to Gene Symbols
+gene_annotations <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = tpm_df$geneid,
+  keytype = "ENSEMBL",
+  columns = "SYMBOL"
+)
+
+# Remove duplicates (if needed)
+gene_annotations <- gene_annotations[!duplicated(gene_annotations$ENSEMBL), ]
+
+# Merge annotation with TPM data
+tpm_annotated <- left_join(tpm_df, gene_annotations, by = c("geneid" = "ENSEMBL"))
+
+# Reorder columns: SYMBOL, GENENAME, then the rest
+tpm_annotated <- tpm_annotated %>%
+  relocate(SYMBOL, .after = geneid)
+
+# View the annotated TPM table
+head(tpm_annotated)
+
+# Save the annotated TPM table as a CSV file
+output_path <- "/users/genomics/jmartinez/a_primary_cilia_project/06_fc/tpm_annotated.csv"
+write.csv(tpm_annotated, output_path, row.names = FALSE)
